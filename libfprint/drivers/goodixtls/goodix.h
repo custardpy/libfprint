@@ -39,9 +39,9 @@ struct _FpiDeviceGoodixTlsClass
   guint8             ep_out;
 
   /* Device-specific TLS/image reply handling. */
-  gboolean           skip_tls_success;
-  guint8             image_flags;
-  guint8             image_prefix_len;
+  gboolean skip_tls_success;
+  guint8   image_flags;
+  guint8   image_prefix_len;
 };
 
 typedef struct __attribute__((__packed__)) _GoodixCallbackInfo

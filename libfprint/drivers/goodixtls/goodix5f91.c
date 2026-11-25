@@ -98,49 +98,59 @@ activate_run (FpiSsm *ssm, FpDevice *dev)
       goodix_start_read_loop (dev);
       goodix_send_nop (dev, goodixtls5xx_check_none, ssm);
       break;
+
     case ACTIVATE_GET_FW:
       goodix_send_query_firmware_version (dev, on_firmware, ssm);
       break;
+
     case ACTIVATE_RESET:
       goodix_send_protocol (dev, GOODIX_CMD_RESET, goodix_5f91_reset_payload,
                             sizeof (goodix_5f91_reset_payload), NULL, TRUE,
                             GOODIX_TIMEOUT, TRUE, on_cmd_done, ssm);
       break;
+
     case ACTIVATE_READ_REG:
       goodix_send_protocol (dev, GOODIX_CMD_READ_SENSOR_REGISTER,
                             goodix_5f91_read_reg_payload,
                             sizeof (goodix_5f91_read_reg_payload), NULL, TRUE,
                             GOODIX_TIMEOUT, TRUE, on_cmd_done, ssm);
       break;
+
     case ACTIVATE_NOP2:
       goodix_send_nop (dev, goodixtls5xx_check_none, ssm);
       break;
+
     case ACTIVATE_READ_OTP:
       goodix_send_protocol (dev, GOODIX_CMD_READ_OTP,
                             goodix_5f91_empty_payload,
                             sizeof (goodix_5f91_empty_payload), NULL, TRUE,
                             GOODIX_TIMEOUT, TRUE, on_cmd_done, ssm);
       break;
+
     case ACTIVATE_POV_CHECK:
       goodix_send_protocol (dev, 0xd6, goodix_5f91_pov_payload,
                             sizeof (goodix_5f91_pov_payload), NULL, TRUE,
                             GOODIX_TIMEOUT, TRUE, on_cmd_done, ssm);
       break;
+
     case ACTIVATE_UPLOAD_CONFIG:
       goodix_send_upload_config_mcu (dev, goodix_5f91_config,
                                      sizeof (goodix_5f91_config), NULL,
                                      goodixtls5xx_check_config_upload, ssm);
       break;
+
     case ACTIVATE_SET_DRV_STATE:
       goodix_send_protocol (dev, 0xc4, goodix_5f91_set_drv_state_payload,
                             sizeof (goodix_5f91_set_drv_state_payload), NULL,
                             TRUE, GOODIX_TIMEOUT, FALSE, on_cmd_done, ssm);
       break;
+
     case ACTIVATE_GET_POV_IMAGE:
       goodix_send_protocol (dev, 0xd2, goodix_5f91_empty_payload,
                             sizeof (goodix_5f91_empty_payload), NULL, TRUE,
                             GOODIX_TIMEOUT, TRUE, on_cmd_done, ssm);
       break;
+
     case ACTIVATE_SWITCH_FDT_MODE:
       goodix_send_mcu_switch_to_fdt_mode (dev, goodix_5f91_fdt_mode,
                                           sizeof (goodix_5f91_fdt_mode), NULL,
@@ -194,6 +204,7 @@ static void
 dev_init (FpImageDevice *img_dev)
 {
   GError *error = NULL;
+
   if (goodix_dev_init (FP_DEVICE (img_dev), &error))
     {
       fpi_image_device_open_complete (img_dev, error);
@@ -206,6 +217,7 @@ static void
 dev_deinit (FpImageDevice *img_dev)
 {
   GError *error = NULL;
+
   if (goodix_dev_deinit (FP_DEVICE (img_dev), &error))
     {
       fpi_image_device_close_complete (img_dev, error);
@@ -218,6 +230,7 @@ static void
 dev_deactivate (FpImageDevice *img_dev)
 {
   GError *error = NULL;
+
   goodix_reset_state (FP_DEVICE (img_dev));
   goodix_shutdown_tls (FP_DEVICE (img_dev), &error);
   fpi_image_device_deactivate_complete (img_dev, error);
@@ -232,6 +245,7 @@ make_image (const guint8 *raw, guint16 len)
 {
   guint32 pixels = GOODIX_5F91_WIDTH * GOODIX_5F91_HEIGHT;
   guint32 n = len / 6;
+
   if (n > pixels / 4)
     n = pixels / 4;
 
@@ -320,7 +334,7 @@ scan_query_cb (FpDevice *dev, guint8 *data, guint16 len, gpointer ssm,
     }
 
   /* This firmware always replies 01 00 to QUERY_MCU_STATE, regardless of
-   * finger presence, and NAV_0 gets no reply. Capture unconditionally. */
+  * finger presence, and NAV_0 gets no reply. Capture unconditionally. */
   fpi_ssm_next_state (ssm);
 }
 
@@ -332,10 +346,12 @@ scan_run (FpiSsm *ssm, FpDevice *dev)
     case SCAN_QUERY_MCU:
       goodix_send_query_mcu_state (dev, scan_query_cb, ssm);
       break;
+
     case SCAN_GET_IMG:
       fpi_image_device_report_finger_status (FP_IMAGE_DEVICE (dev), TRUE);
       goodix_tls_read_image (dev, scan_on_image, ssm);
       break;
+
     case SCAN_DONE:
       fpi_image_device_report_finger_status (FP_IMAGE_DEVICE (dev), FALSE);
       fpi_ssm_next_state (ssm);
