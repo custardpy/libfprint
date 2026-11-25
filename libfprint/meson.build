@@ -141,6 +141,8 @@ driver_sources = {
         [ 'drivers/goodixmoc/goodix.c', 'drivers/goodixmoc/goodix_proto.c' ],
     'goodixtls511' :
         [ 'drivers/goodixtls/goodix511.c' ],
+    'goodixtls5f91' :
+        [ 'drivers/goodixtls/goodix5f91.c' ],
     'fpcmoc' :
         [ 'drivers/fpcmoc/fpc.c' ],
 }

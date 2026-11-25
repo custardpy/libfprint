@@ -371,6 +371,7 @@ void
 goodix_receive_pack (FpDevice *dev, guint8 *data, guint32 length)
 {
   FpiDeviceGoodixTls *self = FPI_DEVICE_GOODIXTLS (dev);
+  FpiDeviceGoodixTlsClass *klass = FPI_DEVICE_GOODIXTLS_GET_CLASS (dev);
   FpiDeviceGoodixTlsPrivate *priv =
     fpi_device_goodixtls_get_instance_private (self);
   guint8 flags;
@@ -390,24 +391,31 @@ goodix_receive_pack (FpDevice *dev, guint8 *data, guint32 length)
       return;
     }
 
-  switch (flags)
+  if (flags == GOODIX_FLAGS_MSG_PROTOCOL)
     {
-    case GOODIX_FLAGS_MSG_PROTOCOL:
       fp_dbg ("Got protocol msg");
       goodix_receive_protocol (dev, payload, payload_len);
-      break;
-
-    case GOODIX_FLAGS_TLS:
+    }
+  else if (flags == GOODIX_FLAGS_TLS)
+    {
       fp_dbg ("Got TLS msg");
       goodix_receive_done (dev, payload, payload_len, NULL);
 
       // TLS message sending it to TLS server.
       // TODO
-      break;
-
-    default:
+    }
+  else if (flags == klass->image_flags)
+    {
+      fp_dbg ("Got TLS image msg");
+      if (payload_len > klass->image_prefix_len)
+        goodix_receive_done (dev, payload + klass->image_prefix_len,
+                             payload_len - klass->image_prefix_len, NULL);
+      else
+        fp_warn ("Short TLS image message");
+    }
+  else
+    {
       fp_warn ("Unknown flags: 0x%02x", flags);
-      break;
     }
 
   g_clear_pointer (&priv->data, g_free);
@@ -1291,11 +1299,17 @@ on_tls_successfully_established (FpDevice *dev, gpointer user_data,
 static void
 tls_handshake_done (FpiSsm *ssm, FpDevice *dev, GError *error)
 {
+  FpiDeviceGoodixTlsClass *klass = FPI_DEVICE_GOODIXTLS_GET_CLASS (dev);
+
   if (error)
     fp_dbg ("failed to do tls handshake: %s (code: %d)", error->message,
             error->code);
-  goodix_send_tls_successfully_established (
-    dev, on_tls_successfully_established, NULL);
+
+  if (klass->skip_tls_success)
+    on_tls_successfully_established (dev, NULL, error);
+  else
+    goodix_send_tls_successfully_established (
+      dev, on_tls_successfully_established, NULL);
 }
 
 static void
@@ -1499,4 +1513,7 @@ fpi_device_goodixtls_init (FpiDeviceGoodixTls *self)
 static void
 fpi_device_goodixtls_class_init (FpiDeviceGoodixTlsClass *class)
 {
+  class->image_flags = GOODIX_FLAGS_TLS;
+  class->image_prefix_len = 0;
+  class->skip_tls_success = FALSE;
 }
